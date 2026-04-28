@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 fastapi
 uvicorn
 tensorflow
@@ -7,3 +8,22 @@ scipy
 python-multipart
 firebase-admin
 google-cloud-bigquery
+=======
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+
+# AI / ML
+tensorflow==2.16.1
+numpy==1.26.4
+scipy==1.13.1
+opencv-python-headless==4.9.0.80
+
+# Google Cloud
+google-cloud-firestore==2.16.0
+google-generativeai==0.7.2
+
+# Utilities
+python-dotenv==1.0.1
+>>>>>>> dc13d868ec24f90e7bb704489532a407d19b2659

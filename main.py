@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import tensorflow as tf
@@ -7,6 +8,17 @@ from tensorflow.keras.preprocessing import image
 import numpy as np
 import cv2
 import tempfile
+=======
+"""
+Scorpio AI — Anti-Piracy Engine
+FastAPI entry point
+"""
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+>>>>>>> dc13d868ec24f90e7bb704489532a407d19b2659
 import os
 from datetime import datetime
 from typing import List, Dict, Any
@@ -30,8 +42,9 @@ try:
 except ImportError:
     bq_client = None
 
-app = FastAPI(title="Scorpio AI Engine")
+from api.routes import content, detections, scraper, analytics
 
+<<<<<<< HEAD
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -43,21 +56,32 @@ app.add_middleware(
 print("Booting Scorpio AI Model...")
 base_model = MobileNetV2(weights='imagenet', include_top=False, pooling='avg')
 print("Model Ready!")
+=======
+app = FastAPI(
+    title="Scorpio AI — Anti-Piracy Engine",
+    description=(
+        "Neural latent-space guardian for digital asset protection. "
+        "Shifting anti-piracy from reactive metadata detection to proactive, "
+        "AI-powered cognitive systems."
+    ),
+    version="2.0.0",
+)
+>>>>>>> dc13d868ec24f90e7bb704489532a407d19b2659
 
-@app.get("/")
-def read_root():
-    return {"status": "Scorpio AI Engine is Online"}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.post("/extract/video/")
-async def extract_video_dna_endpoint(file: UploadFile = File(...), fps_to_extract: int = 1):
-    if not file.filename.endswith(('.mp4', '.avi', '.mov')):
-        raise HTTPException(status_code=400, detail="Invalid file type. Send a video.")
-    
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_file:
-            temp_file.write(await file.read())
-            temp_path = temp_file.name
+# Register all routers
+app.include_router(content.router)
+app.include_router(detections.router)
+app.include_router(scraper.router)
+app.include_router(analytics.router)
 
+<<<<<<< HEAD
         cap = cv2.VideoCapture(temp_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
         
@@ -167,3 +191,22 @@ async def get_dashboard_metrics():
         "detectionRate": "87.3%",
         "responseTime": "1.2s",
     }
+=======
+# Serve frontend static files
+frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
+if os.path.isdir(frontend_dir):
+    app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+
+    @app.get("/", include_in_schema=False)
+    async def serve_frontend():
+        return FileResponse(os.path.join(frontend_dir, "index.html"))
+else:
+    @app.get("/")
+    def root():
+        return {"status": "Scorpio AI Engine v2 Online", "docs": "/docs"}
+
+
+@app.get("/health", tags=["System"])
+def health():
+    return {"status": "ok", "version": "2.0.0"}
+>>>>>>> dc13d868ec24f90e7bb704489532a407d19b2659

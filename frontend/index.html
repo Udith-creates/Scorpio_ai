@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scorpio AI — Anti-Piracy Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+    * { font-family: 'Inter', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    body { background: #0a0a0f; color: #e2e8f0; }
+
+    .glass {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+    }
+    .glow-red { box-shadow: 0 0 20px rgba(239,68,68,0.3); }
+    .glow-purple { box-shadow: 0 0 20px rgba(139,92,246,0.3); }
+    .glow-blue { box-shadow: 0 0 20px rgba(59,130,246,0.25); }
+
+    .tab-btn { transition: all 0.2s; }
+    .tab-btn.active {
+      background: rgba(139,92,246,0.2);
+      border-color: #8b5cf6;
+      color: #c4b5fd;
+    }
+    .verdict-piracy    { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .verdict-fair_use  { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+    .verdict-inconclusive { background: rgba(234,179,8,0.15); color: #fde68a; border: 1px solid rgba(234,179,8,0.3); }
+    .verdict-pending   { background: rgba(148,163,184,0.15); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.3); }
+
+    .status-new          { color: #93c5fd; }
+    .status-analyzed     { color: #c4b5fd; }
+    .status-dmca_submitted { color: #fca5a5; }
+    .status-resolved     { color: #86efac; }
+    .status-dismissed    { color: #94a3b8; }
+
+    .upload-zone {
+      border: 2px dashed rgba(139,92,246,0.4);
+      transition: all 0.3s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: #8b5cf6;
+      background: rgba(139,92,246,0.08);
+    }
+    .progress-bar { transition: width 0.5s ease; }
+
+    .scorpio-logo {
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0a0f; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+    .spinner {
+      border: 3px solid rgba(139,92,246,0.2);
+      border-top: 3px solid #8b5cf6;
+      border-radius: 50%;
+      width: 24px; height: 24px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .pulse-dot {
+      width: 8px; height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.4); }
+    }
+
+    .hash-text {
+      font-size: 0.65rem;
+      word-break: break-all;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Navbar -->
+<nav class="glass border-b border-white/[0.08] sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="text-2xl">🦂</div>
+      <div>
+        <span class="scorpio-logo text-xl font-bold">Scorpio AI</span>
+        <div class="text-xs text-slate-500 -mt-0.5">Neural Anti-Piracy Engine v2.0</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="pulse-dot"></div>
+      <span class="text-xs text-green-400">Engine Online</span>
+      <button onclick="loadSummary()" class="glass px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white transition">
+        Refresh
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Stats Bar -->
+<div class="max-w-7xl mx-auto px-6 py-5">
+  <div class="grid grid-cols-2 md:grid-cols-6 gap-3" id="stats-bar">
+    <div class="glass rounded-xl p-4 text-center"><div class="text-2xl font-bold text-purple-400" id="stat-registered">—</div><div class="text-xs text-slate-500 mt-1">Registered</div></div>
+    <div class="glass rounded-xl p-4 text-center"><div class="text-2xl font-bold text-blue-400" id="stat-detections">—</div><div class="text-xs text-slate-500 mt-1">Detections</div></div>
+    <div class="glass rounded-xl p-4 text-center"><div class="text-2xl font-bold text-red-400" id="stat-piracy">—</div><div class="text-xs text-slate-500 mt-1">Confirmed Piracy</div></div>
+    <div class="glass rounded-xl p-4 text-center"><div class="text-2xl font-bold text-green-400" id="stat-fairuse">—</div><div class="text-xs text-slate-500 mt-1">Fair Use</div></div>
+    <div class="glass rounded-xl p-4 text-center"><div class="text-2xl font-bold text-orange-400" id="stat-dmca">—</div><div class="text-xs text-slate-500 mt-1">DMCA Filed</div></div>
+    <div class="glass rounded-xl p-4 text-center"><div class="text-2xl font-bold text-cyan-400" id="stat-avgsim">—</div><div class="text-xs text-slate-500 mt-1">Avg Similarity</div></div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="max-w-7xl mx-auto px-6">
+  <div class="flex gap-2 mb-6">
+    <button class="tab-btn active glass px-4 py-2 rounded-lg text-sm border border-white/10" onclick="showTab('register')">Register Content</button>
+    <button class="tab-btn glass px-4 py-2 rounded-lg text-sm border border-white/10" onclick="showTab('match')">Match / Scan</button>
+    <button class="tab-btn glass px-4 py-2 rounded-lg text-sm border border-white/10" onclick="showTab('detections')">Detections</button>
+    <button class="tab-btn glass px-4 py-2 rounded-lg text-sm border border-white/10" onclick="showTab('analytics')">Analytics</button>
+    <button class="tab-btn glass px-4 py-2 rounded-lg text-sm border border-white/10" onclick="showTab('library')">Library</button>
+  </div>
+
+  <!-- ── TAB: Register ────────────────────────────────────────────────── -->
+  <div id="tab-register" class="tab-content">
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="glass rounded-2xl p-6">
+        <h2 class="text-lg font-semibold mb-1">Register Original Content</h2>
+        <p class="text-xs text-slate-500 mb-5">Upload a video to extract its Content DNA and anchor the hash to blockchain.</p>
+
+        <form id="register-form" onsubmit="registerContent(event)">
+          <!-- Upload Zone -->
+          <div class="upload-zone rounded-xl p-8 text-center mb-4 cursor-pointer" id="reg-drop-zone"
+               onclick="document.getElementById('reg-file').click()"
+               ondragover="dragOver(event,'reg-drop-zone')"
+               ondragleave="dragLeave('reg-drop-zone')"
+               ondrop="dropFile(event,'reg-file','reg-drop-zone')">
+            <div class="text-4xl mb-2">🎬</div>
+            <div class="text-sm text-slate-400" id="reg-file-label">Drop video here or click to browse</div>
+            <div class="text-xs text-slate-600 mt-1">.mp4 .avi .mov .mkv .webm</div>
+            <input type="file" id="reg-file" class="hidden" accept=".mp4,.avi,.mov,.mkv,.webm" onchange="updateFileLabel('reg-file','reg-file-label')">
+          </div>
+
+          <div class="space-y-3">
+            <input type="text" id="reg-title" placeholder="Content Title *" required
+              class="w-full glass rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 border border-white/10">
+            <input type="text" id="reg-owner" placeholder="Rights Owner / Studio *" required
+              class="w-full glass rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 border border-white/10">
+            <input type="text" id="reg-platform" placeholder="Original Platform (YouTube, Netflix…)"
+              class="w-full glass rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 border border-white/10">
+          </div>
+
+          <button type="submit" class="mt-4 w-full bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-lg font-semibold text-sm transition glow-purple flex items-center justify-center gap-2" id="reg-btn">
+            Extract DNA &amp; Register
+          </button>
+        </form>
+      </div>
+
+      <!-- Register Result -->
+      <div class="glass rounded-2xl p-6" id="reg-result" style="display:none">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="text-green-400 text-xl">✓</div>
+          <h3 class="font-semibold text-green-400">Content Registered</h3>
+        </div>
+        <div class="space-y-3" id="reg-result-body"></div>
+      </div>
+
+      <div class="glass rounded-2xl p-6 flex items-center justify-center" id="reg-loading" style="display:none">
+        <div class="text-center">
+          <div class="spinner mx-auto mb-3"></div>
+          <div class="text-sm text-slate-400">Extracting Content DNA…</div>
+          <div class="text-xs text-slate-600 mt-1">Analyzing frame-by-frame embeddings</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Match / Scan ───────────────────────────────────────────── -->
+  <div id="tab-match" class="tab-content hidden">
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Manual Match -->
+      <div class="glass rounded-2xl p-6">
+        <h2 class="text-lg font-semibold mb-1">Manual Video Match</h2>
+        <p class="text-xs text-slate-500 mb-5">Upload a suspect video to check it against the registered fingerprint database.</p>
+
+        <form id="match-form" onsubmit="matchContent(event)">
+          <div class="upload-zone rounded-xl p-8 text-center mb-4 cursor-pointer" id="match-drop-zone"
+               onclick="document.getElementById('match-file').click()"
+               ondragover="dragOver(event,'match-drop-zone')"
+               ondragleave="dragLeave('match-drop-zone')"
+               ondrop="dropFile(event,'match-file','match-drop-zone')">
+            <div class="text-4xl mb-2">🔍</div>
+            <div class="text-sm text-slate-400" id="match-file-label">Drop suspect video here</div>
+            <input type="file" id="match-file" class="hidden" accept=".mp4,.avi,.mov,.mkv,.webm" onchange="updateFileLabel('match-file','match-file-label')">
+          </div>
+
+          <div class="space-y-3">
+            <input type="text" id="match-title" placeholder="Suspect video title"
+              class="w-full glass rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 border border-white/10">
+            <input type="text" id="match-platform" placeholder="Platform (YouTube, TikTok…)"
+              class="w-full glass rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 border border-white/10">
+            <input type="text" id="match-url" placeholder="Suspect URL (optional)"
+              class="w-full glass rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 border border-white/10">
+            <div class="flex items-center gap-3">
+              <label class="text-xs text-slate-500 w-32">Min similarity:</label>
+              <input type="range" id="match-threshold" min="0.5" max="0.99" step="0.01" value="0.75" oninput="document.getElementById('threshold-val').textContent=this.value" class="flex-1">
+              <span class="text-xs text-purple-400 w-10 text-right mono" id="threshold-val">0.75</span>
+            </div>
+          </div>
+
+          <button type="submit" class="mt-4 w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg font-semibold text-sm transition glow-blue flex items-center justify-center gap-2" id="match-btn">
+            Run DNA Match
+          </button>
+        </form>
+      </div>
+
+      <!-- Platform Scan -->
+      <div class="glass rounded-2xl p-6">
+        <h2 class="text-lg font-semibold mb-1">Platform Scan</h2>
+        <p class="text-xs text-slate-500 mb-5">Deploy the scraper fleet to hunt for infringing copies across platforms.</p>
+
+        <form id="scan-form" onsubmit="triggerScan(event)">
+          <div class="space-y-3">
+            <select id="scan-content-id" class="w-full glass rounded-lg px-4 py-2.5 text-sm border border-white/10 bg-transparent focus:outline-none focus:border-purple-500">
+              <option value="">Select registered content…</option>
+            </select>
+            <input type="text" id="scan-keywords" placeholder="Keywords (comma-separated)" required
+              class="w-full glass rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 border border-white/10">
+            <div>
+              <div class="text-xs text-slate-500 mb-2">Platforms to scan:</div>
+              <div class="flex flex-wrap gap-2" id="platform-checkboxes">
+                <label class="platform-check glass px-3 py-1.5 rounded-lg text-xs cursor-pointer border border-white/10 hover:border-purple-500 transition"><input type="checkbox" value="youtube" class="mr-1.5" checked>YouTube</label>
+                <label class="platform-check glass px-3 py-1.5 rounded-lg text-xs cursor-pointer border border-white/10 hover:border-purple-500 transition"><input type="checkbox" value="dailymotion" class="mr-1.5">Dailymotion</label>
+                <label class="platform-check glass px-3 py-1.5 rounded-lg text-xs cursor-pointer border border-white/10 hover:border-purple-500 transition"><input type="checkbox" value="vimeo" class="mr-1.5">Vimeo</label>
+                <label class="platform-check glass px-3 py-1.5 rounded-lg text-xs cursor-pointer border border-white/10 hover:border-purple-500 transition"><input type="checkbox" value="twitter" class="mr-1.5">Twitter/X</label>
+                <label class="platform-check glass px-3 py-1.5 rounded-lg text-xs cursor-pointer border border-white/10 hover:border-purple-500 transition"><input type="checkbox" value="facebook" class="mr-1.5">Facebook</label>
+                <label class="platform-check glass px-3 py-1.5 rounded-lg text-xs cursor-pointer border border-white/10 hover:border-purple-500 transition"><input type="checkbox" value="tiktok" class="mr-1.5">TikTok</label>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="mt-4 w-full bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-lg font-semibold text-sm transition glow-red flex items-center justify-center gap-2" id="scan-btn">
+            🚀 Deploy Scraper Fleet
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Match Result -->
+    <div id="match-result" class="mt-6" style="display:none"></div>
+    <div id="scan-result" class="mt-6" style="display:none"></div>
+  </div>
+
+  <!-- ── TAB: Detections ─────────────────────────────────────────────── -->
+  <div id="tab-detections" class="tab-content hidden">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">Piracy Detections</h2>
+      <div class="flex gap-2">
+        <select id="det-filter-status" onchange="loadDetections()" class="glass px-3 py-1.5 rounded-lg text-xs border border-white/10 bg-transparent">
+          <option value="">All statuses</option>
+          <option value="new">New</option>
+          <option value="analyzed">Analyzed</option>
+          <option value="dmca_submitted">DMCA Submitted</option>
+          <option value="dismissed">Dismissed</option>
+        </select>
+        <button onclick="loadDetections()" class="glass px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white transition">Refresh</button>
+      </div>
+    </div>
+    <div id="detections-list" class="space-y-3"></div>
+  </div>
+
+  <!-- ── TAB: Analytics ─────────────────────────────────────────────── -->
+  <div id="tab-analytics" class="tab-content hidden">
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="glass rounded-2xl p-6">
+        <h3 class="font-semibold mb-4">Verdict Distribution</h3>
+        <canvas id="verdict-chart" height="220"></canvas>
+      </div>
+      <div class="glass rounded-2xl p-6">
+        <h3 class="font-semibold mb-4">Detections by Platform</h3>
+        <canvas id="platform-chart" height="220"></canvas>
+      </div>
+      <div class="glass rounded-2xl p-6 md:col-span-2">
+        <h3 class="font-semibold mb-4">Heatmap — Platform × Region</h3>
+        <div id="heatmap-grid" class="overflow-x-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Library ────────────────────────────────────────────────── -->
+  <div id="tab-library" class="tab-content hidden">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">Registered Content Library</h2>
+      <button onclick="loadLibrary()" class="glass px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white transition">Refresh</button>
+    </div>
+    <div id="library-list" class="grid md:grid-cols-2 gap-4"></div>
+  </div>
+
+</div>
+
+<!-- DMCA Modal -->
+<div id="dmca-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center" style="display:none!important">
+  <div class="glass rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-red-400">DMCA Takedown Notice</h3>
+      <button onclick="closeDmcaModal()" class="text-slate-500 hover:text-white text-xl">&times;</button>
+    </div>
+    <pre id="dmca-notice-text" class="mono text-xs text-slate-300 whitespace-pre-wrap bg-black/40 rounded-lg p-4"></pre>
+    <div class="mt-4 flex gap-3">
+      <button onclick="copyDmcaNotice()" class="glass px-4 py-2 rounded-lg text-sm hover:text-white transition">Copy Notice</button>
+      <button onclick="closeDmcaModal()" class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-semibold transition">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="h-16"></div>
+
+<script>
+const API = '';  // same origin
+
+// ── Utilities ─────────────────────────────────────────────────────────────
+
+// Escape user-supplied strings before injecting into innerHTML
+function esc(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  event.currentTarget.classList.add('active');
+  if (name === 'detections') loadDetections();
+  if (name === 'analytics') loadAnalytics();
+  if (name === 'library') loadLibrary();
+  if (name === 'match') loadContentSelect();
+}
+
+function dragOver(e, zoneId) {
+  e.preventDefault();
+  document.getElementById(zoneId).classList.add('drag-over');
+}
+function dragLeave(zoneId) {
+  document.getElementById(zoneId).classList.remove('drag-over');
+}
+function dropFile(e, inputId, zoneId) {
+  e.preventDefault();
+  dragLeave(zoneId);
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const input = document.getElementById(inputId);
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  input.dispatchEvent(new Event('change'));
+}
+function updateFileLabel(inputId, labelId) {
+  const f = document.getElementById(inputId).files[0];
+  if (f) document.getElementById(labelId).textContent = f.name;
+}
+
+function verdictBadge(v) {
+  return `<span class="verdict-${v} px-2 py-0.5 rounded-full text-xs font-semibold">${v.replace('_',' ').toUpperCase()}</span>`;
+}
+function statusBadge(s) {
+  return `<span class="status-${s} text-xs font-medium">${s.replace('_',' ').toUpperCase()}</span>`;
+}
+function simBar(score) {
+  const pct = Math.round(score * 100);
+  const color = score > 0.9 ? 'bg-red-500' : score > 0.75 ? 'bg-yellow-500' : 'bg-green-500';
+  return `<div class="flex items-center gap-2"><div class="flex-1 bg-white/10 rounded-full h-1.5"><div class="progress-bar ${color} h-1.5 rounded-full" style="width:${pct}%"></div></div><span class="text-xs mono text-slate-400 w-10 text-right">${pct}%</span></div>`;
+}
+
+function setLoading(btnId, loading, text = '') {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) btn.innerHTML = '<span class="spinner"></span>';
+  else if (text) btn.innerHTML = text;
+}
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, opts);
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    let detail = 'Request failed';
+    try { detail = JSON.parse(text).detail || detail; } catch (_) {
+      if (text) detail = text.slice(0, 120);
+    }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+// ── Summary Stats ──────────────────────────────────────────────────────────
+
+async function loadSummary() {
+  try {
+    const s = await apiFetch('/api/v1/analytics/summary');
+    document.getElementById('stat-registered').textContent = s.total_registered_content;
+    document.getElementById('stat-detections').textContent = s.total_detections;
+    document.getElementById('stat-piracy').textContent = s.piracy_confirmed;
+    document.getElementById('stat-fairuse').textContent = s.fair_use_cleared;
+    document.getElementById('stat-dmca').textContent = s.dmca_submitted;
+    document.getElementById('stat-avgsim').textContent = (s.avg_similarity_score * 100).toFixed(1) + '%';
+  } catch (_) {}
+}
+
+// ── Register ───────────────────────────────────────────────────────────────
+
+async function registerContent(e) {
+  e.preventDefault();
+  const file = document.getElementById('reg-file').files[0];
+  if (!file) return alert('Please select a video file.');
+
+  document.getElementById('reg-result').style.display = 'none';
+  document.getElementById('reg-loading').style.display = 'flex';
+  setLoading('reg-btn', true);
+
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('title', document.getElementById('reg-title').value);
+    fd.append('owner', document.getElementById('reg-owner').value);
+    fd.append('platform', document.getElementById('reg-platform').value || '');
+
+    const regRes = await fetch(API + '/api/v1/content/register', {method:'POST', body: fd});
+    if (!regRes.ok) {
+      const t = await regRes.text().catch(() => '');
+      let msg = `Server error ${regRes.status}`;
+      try { msg = JSON.parse(t).detail || msg; } catch (_) { if (t) msg = t.slice(0,120); }
+      throw new Error(msg);
+    }
+    const data = await regRes.json();
+
+    document.getElementById('reg-loading').style.display = 'none';
+    document.getElementById('reg-result').style.display = 'block';
+    document.getElementById('reg-result-body').innerHTML = `
+      <div class="glass rounded-lg p-3">
+        <div class="text-xs text-slate-500 mb-1">Content ID</div>
+        <div class="mono text-xs text-purple-300">${esc(data.content_id)}</div>
+      </div>
+      <div class="glass rounded-lg p-3">
+        <div class="text-xs text-slate-500 mb-1">Title</div>
+        <div class="text-sm font-medium">${esc(data.title)}</div>
+      </div>
+      <div class="glass rounded-lg p-3">
+        <div class="text-xs text-slate-500 mb-1">DNA Fingerprint</div>
+        <div class="text-sm">${esc(data.extracted_frames)} frames × ${esc(data.dna_dimensions)} dims</div>
+      </div>
+      <div class="glass rounded-lg p-3">
+        <div class="text-xs text-slate-500 mb-1">Blockchain Hash</div>
+        <div class="hash-text">${esc(data.blockchain_hash)}</div>
+      </div>
+      <div class="glass rounded-lg p-3">
+        <div class="text-xs text-slate-500 mb-1">Transaction Hash</div>
+        <div class="hash-text">${data.tx_hash}</div>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-green-400">
+        <span>✓</span> Anchored to Ethereum Mainnet
+      </div>
+    `;
+    loadSummary();
+  } catch (err) {
+    document.getElementById('reg-loading').style.display = 'none';
+    alert('Error: ' + err.message);
+  } finally {
+    setLoading('reg-btn', false, 'Extract DNA & Register');
+  }
+}
+
+// ── Match ──────────────────────────────────────────────────────────────────
+
+async function matchContent(e) {
+  e.preventDefault();
+  const file = document.getElementById('match-file').files[0];
+  if (!file) return alert('Please select a video file.');
+
+  setLoading('match-btn', true);
+  document.getElementById('match-result').style.display = 'none';
+
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('similarity_threshold', document.getElementById('match-threshold').value);
+    fd.append('suspect_title', document.getElementById('match-title').value);
+    fd.append('suspect_platform', document.getElementById('match-platform').value);
+    fd.append('suspect_url', document.getElementById('match-url').value);
+
+    const matchRes = await fetch(API + '/api/v1/content/match', {method:'POST', body: fd});
+    if (!matchRes.ok) {
+      const t = await matchRes.text().catch(() => '');
+      let msg = `Server error ${matchRes.status}`;
+      try { msg = JSON.parse(t).detail || msg; } catch (_) { if (t) msg = t.slice(0,120); }
+      throw new Error(msg);
+    }
+    const data = await matchRes.json();
+
+    const el = document.getElementById('match-result');
+    el.style.display = 'block';
+
+    if (!data.matches || data.matches.length === 0) {
+      el.innerHTML = `<div class="glass rounded-2xl p-6 text-center text-green-400">
+        <div class="text-3xl mb-2">✓</div>
+        <div class="font-semibold">No matches found above threshold</div>
+        <div class="text-xs text-slate-500 mt-1">This video does not appear to infringe any registered content.</div>
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = `
+      <div class="glass rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="text-red-400 text-2xl">⚠</div>
+          <div>
+            <div class="font-semibold">${data.matches.length} match${data.matches.length > 1 ? 'es' : ''} found</div>
+            <div class="text-xs text-slate-500">${data.extracted_frames} frames analyzed · Gemini verdict: ${verdictBadge(data.gemini_verdict)}</div>
+          </div>
+        </div>
+        ${data.gemini_reasoning ? `<div class="glass rounded-lg p-3 mb-4 text-xs text-slate-400 italic">${esc(data.gemini_reasoning)}</div>` : ''}
+        <div class="space-y-3">
+          ${data.matches.map(m => `
+            <div class="glass rounded-xl p-4">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div>
+                  <div class="font-medium text-sm">${esc(m.title)}</div>
+                  <div class="text-xs text-slate-500">${esc(m.owner)} · ${m.matched_frames}/${m.total_frames} frames matched</div>
+                </div>
+                <div class="text-right">
+                  <div class="mono text-sm font-bold text-red-400">${(m.similarity_score*100).toFixed(1)}%</div>
+                </div>
+              </div>
+              ${simBar(m.similarity_score)}
+            </div>
+          `).join('')}
+        </div>
+        ${data.detection_id ? `<div class="mt-4 flex gap-3">
+          <button onclick="fileTakedown('${data.detection_id}')" class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-semibold transition">File DMCA Takedown</button>
+          <button onclick="dismissDetection('${data.detection_id}')" class="glass px-4 py-2 rounded-lg text-sm transition">Dismiss</button>
+        </div>` : ''}
+      </div>
+    `;
+    loadSummary();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  } finally {
+    setLoading('match-btn', false, 'Run DNA Match');
+  }
+}
+
+// ── Platform Scan ──────────────────────────────────────────────────────────
+
+async function loadContentSelect() {
+  try {
+    const data = await apiFetch('/api/v1/content/list');
+    const sel = document.getElementById('scan-content-id');
+    sel.innerHTML = '<option value="">Select registered content…</option>';
+    (data.content || []).forEach(c => {
+      sel.innerHTML += `<option value="${c.content_id}">${c.title} (${c.owner})</option>`;
+    });
+  } catch (_) {}
+}
+
+async function triggerScan(e) {
+  e.preventDefault();
+  const contentId = document.getElementById('scan-content-id').value;
+  if (!contentId) return alert('Select a registered content first.');
+
+  const keywords = document.getElementById('scan-keywords').value
+    .split(',').map(k => k.trim()).filter(Boolean);
+  if (!keywords.length) return alert('Enter at least one keyword.');
+
+  const platforms = [...document.querySelectorAll('#platform-checkboxes input:checked')].map(i => i.value);
+  if (!platforms.length) return alert('Select at least one platform.');
+
+  setLoading('scan-btn', true);
+
+  try {
+    const data = await apiFetch('/api/v1/scraper/scan', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        content_id: contentId,
+        search_keywords: keywords,
+        platforms: platforms,
+        max_results_per_platform: 10,
+      }),
+    });
+
+    const el = document.getElementById('scan-result');
+    el.style.display = 'block';
+    el.innerHTML = `
+      <div class="glass rounded-2xl p-6">
+        <div class="text-green-400 font-semibold mb-2">🚀 Scan Complete</div>
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div><div class="text-2xl font-bold text-blue-400">${platforms.length}</div><div class="text-xs text-slate-500">Platforms Scanned</div></div>
+          <div><div class="text-2xl font-bold text-yellow-400">${data.total_candidates_found}</div><div class="text-xs text-slate-500">Candidates Found</div></div>
+          <div><div class="text-2xl font-bold text-red-400">${data.detections_created}</div><div class="text-xs text-slate-500">Detections Stored</div></div>
+        </div>
+        <div class="mt-3 text-xs text-slate-500">Scan ID: <span class="mono text-purple-400">${data.scan_id}</span></div>
+        <button onclick="showTab('detections');loadDetections()" class="mt-3 glass px-4 py-2 rounded-lg text-sm hover:text-white transition">View Detections →</button>
+      </div>
+    `;
+    loadSummary();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  } finally {
+    setLoading('scan-btn', false, '🚀 Deploy Scraper Fleet');
+  }
+}
+
+// ── Detections ─────────────────────────────────────────────────────────────
+
+async function loadDetections() {
+  const statusFilter = document.getElementById('det-filter-status').value;
+  const url = '/api/v1/detections/list?limit=100' + (statusFilter ? '&status=' + statusFilter : '');
+  const el = document.getElementById('detections-list');
+  el.innerHTML = '<div class="text-slate-500 text-sm">Loading…</div>';
+  try {
+    const data = await apiFetch(url);
+    const dets = data.detections || [];
+    if (!dets.length) {
+      el.innerHTML = '<div class="glass rounded-xl p-8 text-center text-slate-500">No detections yet. Run a scan or upload a suspect video.</div>';
+      return;
+    }
+    el.innerHTML = dets.map(d => `
+      <div class="glass rounded-xl p-4 flex flex-col md:flex-row md:items-start gap-4" id="det-${esc(d.detection_id)}">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center flex-wrap gap-2 mb-1">
+            ${verdictBadge(d.gemini_verdict)}
+            ${statusBadge(d.status)}
+            <span class="text-xs text-slate-500">${esc(d.suspect_platform)}</span>
+          </div>
+          <div class="font-medium text-sm truncate">${esc(d.suspect_title || 'Unknown title')}</div>
+          <div class="text-xs text-slate-500 mt-0.5">Original: <span class="text-slate-300">${esc(d.content_title)}</span> by ${esc(d.content_owner)}</div>
+          ${d.suspect_url ? `<a href="${esc(d.suspect_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-400 hover:underline truncate block mt-0.5">${esc(d.suspect_url)}</a>` : ''}
+          <div class="mt-2">${simBar(d.similarity_score)}</div>
+          ${d.gemini_reasoning ? `<div class="mt-2 text-xs text-slate-500 italic">${esc(d.gemini_reasoning)}</div>` : ''}
+        </div>
+        <div class="flex flex-row md:flex-col gap-2 shrink-0">
+          ${d.status !== 'dmca_submitted' && d.status !== 'dismissed' && d.status !== 'resolved' ? `
+            <button onclick="fileTakedown('${d.detection_id}')" class="bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap">DMCA ⚡</button>
+            <button onclick="dismissDetection('${d.detection_id}')" class="glass px-3 py-1.5 rounded-lg text-xs transition">Dismiss</button>
+          ` : ''}
+          ${d.status === 'dmca_submitted' ? `
+            <button onclick="showDmcaNotice('${d.detection_id}')" class="glass px-3 py-1.5 rounded-lg text-xs text-red-400 transition">View Notice</button>
+          ` : ''}
+          <div class="text-xs text-slate-600 text-right">${new Date(d.detected_at).toLocaleDateString()}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    el.innerHTML = `<div class="text-red-400 text-sm">Error: ${err.message}</div>`;
+  }
+}
+
+async function fileTakedown(detectionId) {
+  if (!confirm('File a DMCA takedown notice for this detection?')) return;
+  try {
+    const data = await apiFetch(`/api/v1/detections/${detectionId}/takedown`, {method:'POST'});
+    showDmcaNotice(detectionId, data.dmca_notice);
+    loadDetections();
+    loadSummary();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+async function dismissDetection(detectionId) {
+  try {
+    await apiFetch(`/api/v1/detections/${detectionId}/dismiss`, {method:'POST'});
+    loadDetections();
+    loadSummary();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+async function showDmcaNotice(detectionId, notice = null) {
+  if (!notice) {
+    const data = await apiFetch(`/api/v1/detections/${detectionId}`);
+    notice = data.dmca_notice || 'No notice available.';
+  }
+  document.getElementById('dmca-notice-text').textContent = notice;
+  document.getElementById('dmca-modal').style.display = 'flex';
+}
+function closeDmcaModal() {
+  document.getElementById('dmca-modal').style.display = 'none';
+}
+function copyDmcaNotice() {
+  navigator.clipboard.writeText(document.getElementById('dmca-notice-text').textContent);
+}
+
+// ── Analytics ──────────────────────────────────────────────────────────────
+
+let _verdictChart, _platformChart;
+
+async function loadAnalytics() {
+  try {
+    const [summary, heatmap] = await Promise.all([
+      apiFetch('/api/v1/analytics/summary'),
+      apiFetch('/api/v1/analytics/heatmap'),
+    ]);
+
+    // Verdict pie
+    const vctx = document.getElementById('verdict-chart').getContext('2d');
+    if (_verdictChart) _verdictChart.destroy();
+    _verdictChart = new Chart(vctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Piracy', 'Fair Use', 'Inconclusive'],
+        datasets: [{
+          data: [
+            summary.piracy_confirmed,
+            summary.fair_use_cleared,
+            summary.inconclusive_count,
+          ],
+          backgroundColor: ['#ef4444','#22c55e','#eab308','#64748b'],
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      },
+    });
+
+    // Platform bar
+    const pctx = document.getElementById('platform-chart').getContext('2d');
+    if (_platformChart) _platformChart.destroy();
+    const platforms = summary.platform_breakdown.slice(0, 8);
+    _platformChart = new Chart(pctx, {
+      type: 'bar',
+      data: {
+        labels: platforms.map(p => p.platform),
+        datasets: [
+          { label: 'Detections', data: platforms.map(p => p.detection_count), backgroundColor: '#8b5cf6' },
+          { label: 'DMCA Filed', data: platforms.map(p => p.dmca_count), backgroundColor: '#ef4444' },
+        ],
+      },
+      options: {
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+        scales: {
+          x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        },
+      },
+    });
+
+    // Heatmap
+    const entries = heatmap.heatmap || [];
+    if (!entries.length) {
+      document.getElementById('heatmap-grid').innerHTML = '<div class="text-slate-500 text-sm text-center py-8">No heatmap data yet.</div>';
+    } else {
+      const platforms2 = [...new Set(entries.map(e => e.platform))];
+      const regions = [...new Set(entries.map(e => e.region))];
+      const lookup = {};
+      entries.forEach(e => { lookup[`${e.platform}__${e.region}`] = e.count; });
+      const maxCount = Math.max(...entries.map(e => e.count), 1);
+
+      let html = `<table class="text-xs w-full"><thead><tr><th class="text-left text-slate-500 pr-3 pb-2">Platform</th>`;
+      regions.forEach(r => { html += `<th class="text-slate-500 pb-2 px-2">${r}</th>`; });
+      html += `</tr></thead><tbody>`;
+      platforms2.forEach(p => {
+        html += `<tr><td class="text-slate-400 pr-3 py-1 font-medium">${p}</td>`;
+        regions.forEach(r => {
+          const c = lookup[`${p}__${r}`] || 0;
+          const alpha = c / maxCount;
+          const bg = c > 0 ? `rgba(239,68,68,${0.1 + alpha * 0.8})` : 'transparent';
+          html += `<td class="text-center py-1 px-2 rounded" style="background:${bg}">${c || ''}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('heatmap-grid').innerHTML = html;
+    }
+  } catch (err) {
+    console.error('Analytics error:', err);
+  }
+}
+
+// ── Library ────────────────────────────────────────────────────────────────
+
+async function loadLibrary() {
+  const el = document.getElementById('library-list');
+  el.innerHTML = '<div class="text-slate-500 text-sm">Loading…</div>';
+  try {
+    const data = await apiFetch('/api/v1/content/list');
+    const items = data.content || [];
+    if (!items.length) {
+      el.innerHTML = '<div class="glass rounded-xl p-8 text-center text-slate-500 col-span-2">No registered content yet.</div>';
+      return;
+    }
+    el.innerHTML = items.map(c => `
+      <div class="glass rounded-xl p-5">
+        <div class="flex items-start justify-between gap-2 mb-3">
+          <div>
+            <div class="font-semibold">${esc(c.title)}</div>
+            <div class="text-xs text-slate-500">${esc(c.owner)} · ${esc(c.platform || 'Unknown platform')}</div>
+          </div>
+          <div class="text-purple-400 text-lg">🎬</div>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between"><span class="text-slate-500">Frames extracted</span><span class="mono">${esc(c.extracted_frames)} × ${esc(c.dna_dimensions)}d</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">Registered</span><span>${new Date(c.registered_at).toLocaleDateString()}</span></div>
+          <div><span class="text-slate-500">Blockchain hash</span><div class="hash-text mt-0.5">${esc(c.blockchain_hash)}</div></div>
+          <div><span class="text-slate-500">Tx hash</span><div class="hash-text mt-0.5">${esc(c.tx_hash)}</div></div>
+        </div>
+        <button onclick="startScanFor('${esc(c.content_id)}','${esc(c.title)}')" class="mt-3 glass px-3 py-1.5 rounded-lg text-xs hover:text-white transition">Scan for Piracy →</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    el.innerHTML = `<div class="text-red-400 text-sm">Error: ${err.message}</div>`;
+  }
+}
+
+function startScanFor(contentId, title) {
+  showTab('match');
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    if (i === 1) btn.classList.add('active');
+    else btn.classList.remove('active');
+  });
+  loadContentSelect().then(() => {
+    document.getElementById('scan-content-id').value = contentId;
+    document.getElementById('scan-keywords').value = title;
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+loadSummary();
+</script>
+</body>
+</html>
