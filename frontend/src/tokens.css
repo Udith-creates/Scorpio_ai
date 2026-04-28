@@ -1,0 +1,200 @@
+/* ─────────────────────────────────────────────────────────────
+   SCORPIO AI  ·  Design Token System
+   Single source of truth for all design values.
+   No raw values anywhere outside this file.
+───────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Fonts ───────────────────────────────────────────────── */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* ── Type Scale ──────────────────────────────────────────── */
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  1.875rem;   /* 30px */
+  --text-4xl:  2.25rem;    /* 36px */
+
+  /* ── Font Weights ────────────────────────────────────────── */
+  --weight-light:     300;
+  --weight-regular:   400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+  --weight-extrabold: 800;
+
+  /* ── Line Heights ────────────────────────────────────────── */
+  --leading-tight:   1.25;
+  --leading-snug:    1.375;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.625;
+
+  /* ── Letter Spacing ──────────────────────────────────────── */
+  --tracking-tight:   -0.025em;
+  --tracking-normal:   0em;
+  --tracking-wide:     0.025em;
+  --tracking-wider:    0.05em;
+  --tracking-widest:   0.1em;
+
+  /* ── Palette ─────────────────────────────────────────────── */
+  --purple-900: #2e1065;
+  --purple-800: #4c1d95;
+  --purple-700: #6d28d9;
+  --purple-600: #7c3aed;
+  --purple-500: #8b5cf6;
+  --purple-400: #a78bfa;
+  --purple-300: #c4b5fd;
+  --purple-200: #ddd6fe;
+
+  --red-700:    #b91c1c;
+  --red-600:    #dc2626;
+  --red-500:    #ef4444;
+  --red-400:    #f87171;
+  --red-300:    #fca5a5;
+
+  --green-600:  #16a34a;
+  --green-500:  #22c55e;
+  --green-400:  #4ade80;
+  --green-300:  #86efac;
+
+  --blue-600:   #2563eb;
+  --blue-500:   #3b82f6;
+  --blue-400:   #60a5fa;
+  --blue-300:   #93c5fd;
+
+  --yellow-500: #eab308;
+  --yellow-400: #facc15;
+  --yellow-300: #fde68a;
+
+  --orange-500: #f97316;
+  --orange-400: #fb923c;
+
+  --cyan-500:   #06b6d4;
+  --cyan-400:   #22d3ee;
+  --cyan-300:   #67e8f9;
+
+  --pink-500:   #ec4899;
+
+  --slate-950:  #020617;
+  --slate-900:  #0f172a;
+  --slate-800:  #1e293b;
+  --slate-700:  #334155;
+  --slate-600:  #475569;
+  --slate-500:  #64748b;
+  --slate-400:  #94a3b8;
+  --slate-300:  #cbd5e1;
+  --slate-200:  #e2e8f0;
+  --slate-100:  #f1f5f9;
+
+  /* ── Semantic: Backgrounds ───────────────────────────────── */
+  --bg-base:     #0a0a0f;
+  --bg-elevated: rgba(255, 255, 255, 0.04);
+  --bg-hover:    rgba(255, 255, 255, 0.07);
+
+  /* ── Semantic: Glass ─────────────────────────────────────── */
+  --glass-bg:     rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur:   blur(12px);
+
+  /* ── Semantic: Borders ───────────────────────────────────── */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.22);
+
+  /* ── Semantic: Text ──────────────────────────────────────── */
+  --text-primary:   #e2e8f0;
+  --text-secondary: var(--slate-400);
+  --text-muted:     var(--slate-500);
+  --text-faint:     var(--slate-600);
+
+  /* ── Semantic: Accent (purple) ───────────────────────────── */
+  --accent:         var(--purple-500);
+  --accent-hover:   var(--purple-400);
+  --accent-dim:     rgba(139, 92, 246, 0.15);
+  --accent-border:  rgba(139, 92, 246, 0.4);
+
+  /* ── Semantic: Status ────────────────────────────────────── */
+  --color-threat:        var(--red-500);
+  --color-threat-text:   var(--red-300);
+  --color-threat-dim:    rgba(239, 68, 68, 0.15);
+  --color-threat-border: rgba(239, 68, 68, 0.3);
+
+  --color-safe:          var(--green-500);
+  --color-safe-text:     var(--green-300);
+  --color-safe-dim:      rgba(34, 197, 94, 0.15);
+  --color-safe-border:   rgba(34, 197, 94, 0.3);
+
+  --color-warn:          var(--yellow-500);
+  --color-warn-text:     var(--yellow-300);
+  --color-warn-dim:      rgba(234, 179, 8, 0.15);
+  --color-warn-border:   rgba(234, 179, 8, 0.3);
+
+  --color-info:          var(--blue-500);
+  --color-info-text:     var(--blue-300);
+  --color-info-dim:      rgba(59, 130, 246, 0.15);
+  --color-info-border:   rgba(59, 130, 246, 0.3);
+
+  --color-pending-text:   var(--slate-300);
+  --color-pending-border: rgba(148, 163, 184, 0.3);
+  --color-pending-dim:    rgba(148, 163, 184, 0.15);
+
+  /* ── Spacing ─────────────────────────────────────────────── */
+  --space-0:    0rem;
+  --space-px:   1px;
+  --space-0-5:  0.125rem;
+  --space-1:    0.25rem;
+  --space-1-5:  0.375rem;
+  --space-2:    0.5rem;
+  --space-2-5:  0.625rem;
+  --space-3:    0.75rem;
+  --space-4:    1rem;
+  --space-5:    1.25rem;
+  --space-6:    1.5rem;
+  --space-7:    1.75rem;
+  --space-8:    2rem;
+  --space-10:   2.5rem;
+  --space-12:   3rem;
+  --space-16:   4rem;
+  --space-20:   5rem;
+  --space-24:   6rem;
+
+  /* ── Border Radius ───────────────────────────────────────── */
+  --radius-sm:   0.375rem;
+  --radius-md:   0.5rem;
+  --radius-lg:   0.75rem;
+  --radius-xl:   1rem;
+  --radius-2xl:  1.5rem;
+  --radius-full: 9999px;
+
+  /* ── Shadows & Glows ─────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --glow-purple: 0 0 20px rgba(139, 92, 246, 0.3);
+  --glow-red:    0 0 20px rgba(239, 68, 68, 0.3);
+  --glow-blue:   0 0 20px rgba(59, 130, 246, 0.25);
+  --glow-green:  0 0 16px rgba(34, 197, 94, 0.25);
+
+  /* ── Z-Index ─────────────────────────────────────────────── */
+  --z-base:     0;
+  --z-raised:   10;
+  --z-dropdown: 20;
+  --z-sticky:   30;
+  --z-overlay:  40;
+  --z-navbar:   50;
+  --z-modal:    60;
+  --z-tooltip:  70;
+
+  /* ── Animation ───────────────────────────────────────────── */
+  --duration-fast:   0.15s;
+  --duration-normal: 0.2s;
+  --duration-slow:   0.3s;
+  --ease-default:  cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:      cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-reveal:   cubic-bezier(0.76, 0, 0.24, 1);
+}
