@@ -31,6 +31,7 @@ def _search_youtube(keyword: str, max_results: int) -> List[Dict[str, Any]]:
         return []
     try:
         import urllib.request
+        import urllib.parse
         import json
         q = urllib.parse.quote(keyword)
         url = (
@@ -38,7 +39,6 @@ def _search_youtube(keyword: str, max_results: int) -> List[Dict[str, Any]]:
             f"?part=snippet&q={q}&type=video&maxResults={max_results}"
             f"&key={YOUTUBE_API_KEY}"
         )
-        import urllib.parse
         with urllib.request.urlopen(url, timeout=10) as resp:
             data = json.loads(resp.read())
         results = []

@@ -20,6 +20,7 @@ async def get_summary():
 
     piracy = sum(1 for d in detections if d.get("gemini_verdict") == "piracy")
     fair_use = sum(1 for d in detections if d.get("gemini_verdict") == "fair_use")
+    inconclusive = sum(1 for d in detections if d.get("gemini_verdict") == "inconclusive")
     dmca = sum(1 for d in detections if d.get("status") == "dmca_submitted")
 
     scores = [d.get("similarity_score", 0) for d in detections if d.get("similarity_score")]
@@ -42,6 +43,7 @@ async def get_summary():
         total_detections=len(detections),
         piracy_confirmed=piracy,
         fair_use_cleared=fair_use,
+        inconclusive_count=inconclusive,
         dmca_submitted=dmca,
         avg_similarity_score=avg_score,
         platform_breakdown=platform_breakdown,

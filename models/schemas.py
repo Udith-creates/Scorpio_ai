@@ -77,6 +77,7 @@ class Detection(BaseModel):
     suspect_title: Optional[str] = None
     similarity_score: float
     gemini_verdict: GeminiVerdict
+    region: str = "US"
     gemini_reasoning: Optional[str] = None
     status: DetectionStatus
     detected_at: str
@@ -122,6 +123,7 @@ class AnalyticsSummary(BaseModel):
     total_detections: int
     piracy_confirmed: int
     fair_use_cleared: int
+    inconclusive_count: int
     dmca_submitted: int
     avg_similarity_score: float
     platform_breakdown: List[PlatformStat]
