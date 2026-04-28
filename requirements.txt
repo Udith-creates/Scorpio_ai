@@ -5,3 +5,5 @@ opencv-python-headless
 numpy
 scipy
 python-multipart
+firebase-admin
+google-cloud-bigquery
