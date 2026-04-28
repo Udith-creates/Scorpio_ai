@@ -1,0 +1,222 @@
+@import './tokens.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Step 2: Typography base ─────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    font-family: var(--font-sans);
+  }
+
+  body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    color: var(--text-primary);
+  }
+
+  h1 { font-size: var(--text-4xl); font-weight: var(--weight-bold); }
+  h2 { font-size: var(--text-2xl); }
+  h3 { font-size: var(--text-xl); }
+  h4 { font-size: var(--text-lg); }
+
+  p {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    line-height: var(--leading-relaxed);
+  }
+
+  a { color: var(--color-info-text); }
+  a:hover { text-decoration: underline; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-base); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--slate-700);
+    border-radius: var(--radius-full);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--slate-600); }
+}
+
+/* ── Step 3: Component classes using tokens ──────────────── */
+@layer components {
+
+  /* Glass surface */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+  }
+
+  /* Monospace text */
+  .mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  /* Hash display */
+  .hash-text {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    word-break: break-all;
+    color: var(--text-secondary);
+    line-height: var(--leading-relaxed);
+  }
+
+  /* Scorpio gradient logo text */
+  .scorpio-logo {
+    background: linear-gradient(135deg, var(--accent), var(--pink-500));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: var(--weight-bold);
+  }
+
+  /* Glow helpers */
+  .glow-purple { box-shadow: var(--glow-purple); }
+  .glow-red    { box-shadow: var(--glow-red); }
+  .glow-blue   { box-shadow: var(--glow-blue); }
+  .glow-green  { box-shadow: var(--glow-green); }
+
+  /* Upload drop zone */
+  .upload-zone {
+    border: 2px dashed var(--accent-border);
+    border-radius: var(--radius-lg);
+    transition: border-color var(--duration-slow) var(--ease-default),
+                background  var(--duration-slow) var(--ease-default);
+  }
+  .upload-zone:hover,
+  .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  /* Glass input */
+  .glass-input {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+    width: 100%;
+    border-radius: var(--radius-md);
+    padding: var(--space-2-5) var(--space-4);
+    font-size: var(--text-sm);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--duration-normal) var(--ease-default);
+  }
+  .glass-input:focus { border-color: var(--accent); }
+  .glass-input::placeholder { color: var(--text-muted); }
+
+  /* Glass select */
+  .glass-select {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2-5) var(--space-4);
+    font-size: var(--text-sm);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    outline: none;
+    width: 100%;
+    transition: border-color var(--duration-normal) var(--ease-default);
+  }
+  .glass-select:focus { border-color: var(--accent); }
+  .glass-select option { background: #1e293b; color: var(--text-primary); }
+
+  /* ── Step 3: Verdict badges ──────────────────────────────── */
+  .verdict-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-0-5) var(--space-2);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+  }
+  .verdict-piracy {
+    background: var(--color-threat-dim);
+    color: var(--color-threat-text);
+    border: 1px solid var(--color-threat-border);
+  }
+  .verdict-fair_use {
+    background: var(--color-safe-dim);
+    color: var(--color-safe-text);
+    border: 1px solid var(--color-safe-border);
+  }
+  .verdict-inconclusive {
+    background: var(--color-warn-dim);
+    color: var(--color-warn-text);
+    border: 1px solid var(--color-warn-border);
+  }
+  .verdict-pending {
+    background: var(--color-pending-dim);
+    color: var(--color-pending-text);
+    border: 1px solid var(--color-pending-border);
+  }
+
+  /* ── Status text colors ──────────────────────────────────── */
+  .status-new            { color: var(--blue-300); }
+  .status-analyzed       { color: var(--purple-300); }
+  .status-dmca_submitted { color: var(--red-300); }
+  .status-resolved       { color: var(--green-300); }
+  .status-dismissed      { color: var(--slate-400); }
+
+  /* ── Spinner (CSS only – no Framer needed) ───────────────── */
+  @keyframes spin-token {
+    to { transform: rotate(360deg); }
+  }
+  .spinner {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--accent-dim);
+    border-top-color: var(--accent);
+    border-radius: var(--radius-full);
+    animation: spin-token 0.8s linear infinite;
+  }
+
+  /* ── Pulse dot (Engine Online) ───────────────────────────── */
+  @keyframes pulse-token {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(1.4); }
+  }
+  .pulse-dot {
+    width: var(--space-2);
+    height: var(--space-2);
+    background: var(--green-500);
+    border-radius: var(--radius-full);
+    animation: pulse-token 2s ease-in-out infinite;
+  }
+
+  /* ── Progress bar ────────────────────────────────────────── */
+  .progress-bar {
+    transition: width 0.5s var(--ease-out);
+  }
+
+  /* ── Tabs active state ───────────────────────────────────── */
+  .tab-active {
+    background: var(--accent-dim);
+    border-color: var(--accent) !important;
+    color: var(--purple-300);
+  }
+}
+
+/* ── Step 4: Utility overrides ───────────────────────────── */
+@layer utilities {
+  .scrollbar-thin { scrollbar-width: thin; }
+}
