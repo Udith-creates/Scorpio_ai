@@ -22,6 +22,9 @@ async def trigger_scan(req: ScanRequest):
     if not content:
         raise HTTPException(404, f"Content '{req.content_id}' not registered.")
 
+    # Pass registered DNA so scraper can do real yt-dlp comparison
+    registered_dna = content.get("dna_sequence")
+
     candidates = scan_platforms(
         content_id=req.content_id,
         content_title=content["title"],
@@ -29,6 +32,7 @@ async def trigger_scan(req: ScanRequest):
         keywords=req.search_keywords,
         platforms=req.platforms,
         max_results_per_platform=req.max_results_per_platform,
+        registered_dna=registered_dna,
     )
 
     # Persist all detections

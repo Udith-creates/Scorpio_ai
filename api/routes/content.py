@@ -53,8 +53,8 @@ async def register_content(
     if not dna_sequence:
         raise HTTPException(422, "Could not extract any frames from the video.")
 
-    chain_info = anchor_to_blockchain(dna_sequence)
     content_id = str(uuid.uuid4())
+    chain_info = anchor_to_blockchain(dna_sequence, title=title, content_id=content_id)
 
     db.save_content(
         content_id=content_id,
@@ -76,6 +76,9 @@ async def register_content(
         dna_dimensions=len(dna_sequence[0]),
         blockchain_hash=chain_info["content_hash"],
         tx_hash=chain_info["tx_hash"],
+        block_number=chain_info.get("block_number"),
+        network=chain_info.get("network"),
+        real_chain=chain_info.get("real_chain", False),
         registered_at=datetime.now(timezone.utc).isoformat(),
     )
 

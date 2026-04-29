@@ -29,6 +29,9 @@ class ContentRegisterResponse(BaseModel):
     dna_dimensions: int
     blockchain_hash: str
     tx_hash: str
+    block_number: Optional[int] = None
+    network: Optional[str] = None
+    real_chain: bool = False
     registered_at: str
 
 

@@ -1,5 +1,5 @@
 steps:
-  # Build Docker image
+  # Build Docker image (multi-stage: Node builds React, Python serves it)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -27,18 +27,26 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--memory'
-      - '2Gi'
+      - '4Gi'
       - '--cpu'
       - '2'
       - '--timeout'
       - '300'
+      - '--concurrency'
+      - '4'
       - '--set-env-vars'
-      - 'GCP_PROJECT_ID=$PROJECT_ID'
+      - 'GCP_PROJECT_ID=$PROJECT_ID,ENABLE_VIDEO_DOWNLOAD=true'
       - '--set-secrets'
-      - 'GEMINI_API_KEY=GEMINI_API_KEY:latest'
+      - >-
+        GEMINI_API_KEY=GEMINI_API_KEY:latest,
+        ETH_RPC_URL=ETH_RPC_URL:latest,
+        ETH_PRIVATE_KEY=ETH_PRIVATE_KEY:latest,
+        CONTRACT_ADDRESS=CONTRACT_ADDRESS:latest,
+        VIMEO_TOKEN=VIMEO_TOKEN:latest
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/scorpio-repo/scorpio-ai:$COMMIT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
