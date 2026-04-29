@@ -34,18 +34,23 @@ app.include_router(detections.router)
 app.include_router(scraper.router)
 app.include_router(analytics.router)
 
-# Serve frontend static files
-frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
-if os.path.isdir(frontend_dir):
-    app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+# Serve Vite-built React frontend from frontend/dist/
+_base = os.path.dirname(__file__)
+_dist = os.path.join(_base, "frontend", "dist")
+_assets = os.path.join(_dist, "assets")
 
-    @app.get("/", include_in_schema=False)
-    async def serve_frontend():
-        return FileResponse(os.path.join(frontend_dir, "index.html"))
+if os.path.isdir(_dist):
+    # Serve hashed JS/CSS/image bundles under /assets
+    app.mount("/assets", StaticFiles(directory=_assets), name="assets")
+
+    # SPA catch-all — any non-API path serves index.html so React Router works
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        return FileResponse(os.path.join(_dist, "index.html"))
 else:
     @app.get("/")
     def root():
-        return {"status": "Scorpio AI Engine v2 Online", "docs": "/docs"}
+        return {"status": "Scorpio AI Engine v2 — frontend not built", "docs": "/docs"}
 
 
 @app.get("/health", tags=["System"])
